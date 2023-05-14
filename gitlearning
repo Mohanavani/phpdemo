@@ -1,0 +1,41 @@
+# Read the list of usernames and full names from the "bdg-metal-users.txt" file
+$users = Get-Content -Path "bdg-metal-users.txt"
+$groupname = "BDG-Users"
+$rdpusergroup = "Remote Desktop Users"
+#Created by Lakshmi Kanth Reddy#
+# Create a new group called "BDG-Users"
+net localgroup $groupname /add
+
+ 
+
+# Loop through and create an RDP account for each user
+foreach ($user in $users) {
+  $username = ($user -split '\s+')[0]   # Extract the username from the input line
+  $fullname = ($user -split '\s+',2)[1] # Extract the full name from the input line
+
+ 
+
+  # Generate a random password for the user
+  $password = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 12 | % {[char]$_})
+
+ 
+
+  # Create the user account with full name
+  net user $username $password /add /expires:never /passwordchg:no /fullname:"$fullname"
+
+ 
+
+  # Add the user to the "PS-Users" and "Remote Desktop Users" groups
+  net localgroup $groupname $username /add
+  net localgroup $rdpusergroup $username /add
+
+ 
+
+  # Set the password to never expire
+  WMIC USERACCOUNT WHERE "Name='$username'" SET PasswordExpires=FALSE
+
+ 
+
+  # Output the username and password to a log file
+  "$username, $password" | Out-File -FilePath "C:\Users\Administrator\BDG-User-Credentials.csv" -Append
+}
